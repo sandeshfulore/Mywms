@@ -1,0 +1,2121 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WMS Dashboard</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <style>
+  * { font-family: 'DM Sans', sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  html, body { height: 100%; margin: 0; }
+  .sidebar-item { transition: all 0.15s ease; }
+  .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,0.08); }
+  .sidebar-item.active { border-right: 3px solid #22d3ee; }
+  .card-enter { animation: cardIn 0.3s ease forwards; }
+  @keyframes cardIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+  .toast { animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; }
+  @keyframes toastIn { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes toastOut { to { opacity:0; transform:translateY(-12px); } }
+  input, select, textarea { outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #22d3ee !important; box-shadow: 0 0 0 2px rgba(34,211,238,0.15); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  .tab-btn { transition: all 0.15s; }
+  .tab-btn.active { color: #22d3ee; border-bottom: 2px solid #22d3ee; }
+  .confirm-overlay { animation: fadeIn 0.15s ease; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+</style>
+  <style>body { box-sizing: border-box; }</style>
+ </head>
+ <body class="h-full bg-slate-950 text-slate-200 overflow-hidden">
+  <div id="app" class="h-full w-full flex">
+   <!-- Sidebar -->
+   <aside id="sidebar" class="w-60 bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0">
+    <div class="p-5 border-b border-slate-800">
+     <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
+       <i data-lucide="warehouse" class="w-4 h-4 text-slate-950"></i>
+      </div>
+      <div>
+       <h1 id="el-company" class="text-sm font-bold text-white leading-tight">WMS Pro</h1>
+       <p id="el-subtitle" class="text-[10px] text-slate-500">Warehouse Management</p>
+      </div>
+     </div>
+    </div>
+    <nav class="flex-1 py-3 overflow-auto">
+     <div class="px-3 mb-1 text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+      Overview
+     </div><button onclick="navigate('dashboard')" data-nav="dashboard" class="sidebar-item active w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard </button>
+     <div class="px-3 mt-3 mb-1 text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
+      Operations
+     </div><button onclick="navigate('inventory')" data-nav="inventory" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="package" class="w-4 h-4"></i> Inventory </button> <button onclick="navigate('purchase')" data-nav="purchase" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="shopping-cart" class="w-4 h-4"></i> Purchases </button> <button onclick="navigate('sales')" data-nav="sales" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="trending-up" class="w-4 h-4"></i> Sales </button> <button onclick="navigate('transfers')" data-nav="transfers" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="arrow-left-right" class="w-4 h-4"></i> Stock Transfer </button> <button onclick="navigate('vendors')" data-nav="vendors" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="users" class="w-4 h-4"></i> Vendors </button> <button onclick="navigate('reports')" data-nav="reports" class="sidebar-item w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-300"> <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports </button>
+    </nav>
+    <div class="p-4 border-t border-slate-800 space-y-2">
+     <button onclick="openGitHubBackupModal()" class="w-full flex items-center gap-2 bg-slate-800 hover:bg-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 transition"> <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub Backup </button>
+     <div class="text-[10px] text-slate-600">
+      v1.0 · Data-backed
+     </div>
+    </div>
+   </aside><!-- Main -->
+   <main id="main" class="flex-1 h-full overflow-auto">
+    <!-- Toast container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div><!-- DASHBOARD -->
+    <section id="page-dashboard" class="p-6 space-y-5">
+     <div class="flex items-center justify-between">
+      <div>
+       <h2 class="text-xl font-bold text-white">Dashboard</h2>
+       <p class="text-xs text-slate-500">Overview of warehouse operations</p>
+      </div>
+      <div class="text-xs text-slate-500 mono" id="dash-date"></div>
+     </div>
+     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="stats-grid">
+      <div class="card-enter bg-slate-900 border border-slate-800 rounded-xl p-4">
+       <div class="flex items-center gap-2 mb-2">
+        <div class="w-7 h-7 rounded-lg bg-cyan-500/10 flex items-center justify-center"><i data-lucide="package" class="w-3.5 h-3.5 text-cyan-400"></i>
+        </div><span class="text-[10px] text-slate-500 uppercase">Products</span>
+       </div>
+       <div id="stat-products" class="text-2xl font-bold text-white mono">
+        0
+       </div>
+      </div>
+      <div class="card-enter bg-slate-900 border border-slate-800 rounded-xl p-4" style="animation-delay:0.05s">
+       <div class="flex items-center gap-2 mb-2">
+        <div class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center"><i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i>
+        </div><span class="text-[10px] text-slate-500 uppercase">Total Stock</span>
+       </div>
+       <div id="stat-stock" class="text-2xl font-bold text-white mono">
+        0
+       </div>
+      </div>
+      <div class="card-enter bg-slate-900 border border-slate-800 rounded-xl p-4" style="animation-delay:0.1s">
+       <div class="flex items-center gap-2 mb-2">
+        <div class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center"><i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-amber-400"></i>
+        </div><span class="text-[10px] text-slate-500 uppercase">Purchases</span>
+       </div>
+       <div id="stat-purchases" class="text-2xl font-bold text-white mono">
+        0
+       </div>
+      </div>
+      <div class="card-enter bg-slate-900 border border-slate-800 rounded-xl p-4" style="animation-delay:0.15s">
+       <div class="flex items-center gap-2 mb-2">
+        <div class="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center"><i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-violet-400"></i>
+        </div><span class="text-[10px] text-slate-500 uppercase">Sales</span>
+       </div>
+       <div id="stat-sales" class="text-2xl font-bold text-white mono">
+        0
+       </div>
+      </div>
+     </div><!-- Recent Activity -->
+     <div class="bg-slate-900 border border-slate-800 rounded-xl">
+      <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+       <span class="text-sm font-semibold text-white">Recent Activity</span> <span class="text-[10px] text-slate-500">Last 10 transactions</span>
+      </div>
+      <div id="recent-activity" class="divide-y divide-slate-800 max-h-64 overflow-auto">
+       <div class="px-4 py-6 text-center text-xs text-slate-600">
+        No activity yet. Add products, purchases, or sales to get started.
+       </div>
+      </div>
+     </div><!-- Low Stock -->
+     <div class="bg-slate-900 border border-slate-800 rounded-xl">
+      <div class="px-4 py-3 border-b border-slate-800"><span class="text-sm font-semibold text-white">Low Stock Alerts</span>
+      </div>
+      <div id="low-stock" class="divide-y divide-slate-800 max-h-48 overflow-auto">
+       <div class="px-4 py-4 text-center text-xs text-slate-600">
+        No low stock items.
+       </div>
+      </div>
+     </div>
+    </section><!-- INVENTORY -->
+    <section id="page-inventory" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Inventory</h2>
+       <p class="text-xs text-slate-500">Manage your warehouse products</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="openModal('product')" class="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-semibold px-3 py-2 rounded-lg transition"> <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Product </button> <button onclick="openBulkUpdate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Bulk Update </button> <button onclick="downloadTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Template </button> <button onclick="document.getElementById('csv-upload-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Bulk Upload </button> <input type="file" id="csv-upload-input" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+      </div>
+     </div>
+     <div class="flex gap-2 flex-wrap">
+      <input id="inv-search" oninput="renderInventory()" type="text" placeholder="Search products..." class="bg-slate-900 border border-slate-800 rounded-lg text-xs px-3 py-2 w-52 text-slate-200 placeholder-slate-600"> <select id="inv-cat-filter" onchange="renderInventory()" class="bg-slate-900 border border-slate-800 rounded-lg text-xs px-3 py-2 text-slate-300"> <option value="">All Categories</option> </select>
+     </div>
+     <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="overflow-auto">
+       <table class="w-full text-xs">
+        <thead>
+         <tr class="text-left text-slate-500 border-b border-slate-800">
+          <th class="px-4 py-2.5 font-medium">SKU</th>
+          <th class="px-4 py-2.5 font-medium">Product</th>
+          <th class="px-4 py-2.5 font-medium">Category</th>
+          <th class="px-4 py-2.5 font-medium text-right">Qty</th>
+          <th class="px-4 py-2.5 font-medium text-right">Unit Price</th>
+          <th class="px-4 py-2.5 font-medium text-right">Value</th>
+          <th class="px-4 py-2.5 font-medium text-center">Actions</th>
+         </tr>
+        </thead>
+        <tbody id="inv-table" class="divide-y divide-slate-800"></tbody>
+       </table>
+      </div>
+      <div id="inv-empty" class="px-4 py-8 text-center text-xs text-slate-600">
+       No products yet. Click "Add Product" to begin.
+      </div>
+     </div>
+    </section><!-- PURCHASES -->
+    <section id="page-purchase" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Purchases</h2>
+       <p class="text-xs text-slate-500">Record incoming stock</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="openModal('purchase')" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-3 py-2 rounded-lg transition"> <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Purchase </button> <button onclick="downloadPurchaseTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Template </button> <button onclick="openBulkUpdatePurchase()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Bulk Update </button> <button onclick="document.getElementById('csv-upload-purchase-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Bulk Upload </button> <input type="file" id="csv-upload-purchase-input" accept=".csv" class="hidden" onchange="handleCSVUploadPurchase(event)">
+      </div>
+     </div>
+     <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="overflow-auto">
+       <table class="w-full text-xs">
+        <thead>
+         <tr class="text-left text-slate-500 border-b border-slate-800">
+          <th class="px-4 py-2.5 font-medium">Date</th>
+          <th class="px-4 py-2.5 font-medium">Product</th>
+          <th class="px-4 py-2.5 font-medium">Vendor</th>
+          <th class="px-4 py-2.5 font-medium text-right">Qty</th>
+          <th class="px-4 py-2.5 font-medium text-right">Total</th>
+          <th class="px-4 py-2.5 font-medium">Status</th>
+          <th class="px-4 py-2.5 font-medium text-center">Actions</th>
+         </tr>
+        </thead>
+        <tbody id="purchase-table" class="divide-y divide-slate-800"></tbody>
+       </table>
+      </div>
+      <div id="purchase-empty" class="px-4 py-8 text-center text-xs text-slate-600">
+       No purchases recorded yet.
+      </div>
+     </div>
+    </section><!-- SALES -->
+    <section id="page-sales" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Sales</h2>
+       <p class="text-xs text-slate-500">Record outgoing stock</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="openModal('sale')" class="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold px-3 py-2 rounded-lg transition"> <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Sale </button> <button onclick="downloadSalesTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Template </button> <button onclick="openBulkUpdateSales()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Bulk Update </button> <button onclick="document.getElementById('csv-upload-sales-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Bulk Upload </button> <input type="file" id="csv-upload-sales-input" accept=".csv" class="hidden" onchange="handleCSVUploadSales(event)">
+      </div>
+     </div>
+     <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="overflow-auto">
+       <table class="w-full text-xs">
+        <thead>
+         <tr class="text-left text-slate-500 border-b border-slate-800">
+          <th class="px-4 py-2.5 font-medium">Date</th>
+          <th class="px-4 py-2.5 font-medium">Product</th>
+          <th class="px-4 py-2.5 font-medium text-right">Qty</th>
+          <th class="px-4 py-2.5 font-medium text-right">Total</th>
+          <th class="px-4 py-2.5 font-medium">Status</th>
+          <th class="px-4 py-2.5 font-medium text-center">Actions</th>
+         </tr>
+        </thead>
+        <tbody id="sales-table" class="divide-y divide-slate-800"></tbody>
+       </table>
+      </div>
+      <div id="sales-empty" class="px-4 py-8 text-center text-xs text-slate-600">
+       No sales recorded yet.
+      </div>
+     </div>
+    </section><!-- STOCK TRANSFER -->
+    <section id="page-transfers" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Stock Transfer Orders</h2>
+       <p class="text-xs text-slate-500">Manage inter-warehouse stock transfers</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="openModal('transfer')" class="flex items-center gap-1.5 bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"> <i data-lucide="plus" class="w-3.5 h-3.5"></i> New Transfer </button> <button onclick="downloadTransferTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Template </button> <button onclick="openBulkUpdateTransfers()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Bulk Update </button> <button onclick="document.getElementById('csv-upload-transfers-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Bulk Upload </button> <input type="file" id="csv-upload-transfers-input" accept=".csv" class="hidden" onchange="handleCSVUploadTransfers(event)">
+      </div>
+     </div>
+     <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="overflow-auto">
+       <table class="w-full text-xs">
+        <thead>
+         <tr class="text-left text-slate-500 border-b border-slate-800">
+          <th class="px-4 py-2.5 font-medium">Date</th>
+          <th class="px-4 py-2.5 font-medium">Product</th>
+          <th class="px-4 py-2.5 font-medium">From Location</th>
+          <th class="px-4 py-2.5 font-medium">To Location</th>
+          <th class="px-4 py-2.5 font-medium text-right">Qty</th>
+          <th class="px-4 py-2.5 font-medium">Status</th>
+          <th class="px-4 py-2.5 font-medium">Notes</th>
+          <th class="px-4 py-2.5 font-medium text-center">Actions</th>
+         </tr>
+        </thead>
+        <tbody id="transfer-table" class="divide-y divide-slate-800"></tbody>
+       </table>
+      </div>
+      <div id="transfer-empty" class="px-4 py-8 text-center text-xs text-slate-600">
+       No stock transfers yet.
+      </div>
+     </div>
+    </section><!-- VENDORS -->
+    <section id="page-vendors" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Vendors</h2>
+       <p class="text-xs text-slate-500">Manage your suppliers</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="openModal('vendor')" class="flex items-center gap-1.5 bg-violet-500 hover:bg-violet-400 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"> <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Vendor </button> <button onclick="downloadVendorTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Template </button> <button onclick="openBulkUpdateVendors()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Bulk Update </button> <button onclick="document.getElementById('csv-upload-vendors-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Bulk Upload </button> <input type="file" id="csv-upload-vendors-input" accept=".csv" class="hidden" onchange="handleCSVUploadVendors(event)">
+      </div>
+     </div>
+     <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="overflow-auto">
+       <table class="w-full text-xs">
+        <thead>
+         <tr class="text-left text-slate-500 border-b border-slate-800">
+          <th class="px-4 py-2.5 font-medium">Name</th>
+          <th class="px-4 py-2.5 font-medium">Category</th>
+          <th class="px-4 py-2.5 font-medium">Status</th>
+          <th class="px-4 py-2.5 font-medium">Notes</th>
+          <th class="px-4 py-2.5 font-medium text-center">Actions</th>
+         </tr>
+        </thead>
+        <tbody id="vendor-table" class="divide-y divide-slate-800"></tbody>
+       </table>
+      </div>
+      <div id="vendor-empty" class="px-4 py-8 text-center text-xs text-slate-600">
+       No vendors added yet.
+      </div>
+     </div>
+    </section><!-- REPORTS -->
+    <section id="page-reports" class="p-6 space-y-4 hidden">
+     <div class="flex items-center justify-between flex-wrap gap-3">
+      <div>
+       <h2 class="text-xl font-bold text-white">Reports</h2>
+       <p class="text-xs text-slate-500">Warehouse analytics summary</p>
+      </div>
+      <div class="flex gap-2 flex-wrap"><button onclick="downloadStockTemplate()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Stock Template </button> <button onclick="document.getElementById('csv-upload-stock-input').click()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="upload" class="w-3.5 h-3.5"></i> Upload Stock </button> <input type="file" id="csv-upload-stock-input" accept=".csv" class="hidden" onchange="handleCSVUploadStock(event)"> <button onclick="downloadFullReport()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700"> <i data-lucide="download" class="w-3.5 h-3.5"></i> Download Report </button>
+      </div>
+     </div>
+     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+       <h3 class="text-sm font-semibold text-white mb-3">Inventory by Category</h3>
+       <div id="report-categories" class="space-y-2"></div>
+       <div id="report-cat-empty" class="text-xs text-slate-600 text-center py-4">
+        No data yet.
+       </div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+       <h3 class="text-sm font-semibold text-white mb-3">Top Products by Value</h3>
+       <div id="report-top" class="space-y-2"></div>
+       <div id="report-top-empty" class="text-xs text-slate-600 text-center py-4">
+        No data yet.
+       </div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+       <h3 class="text-sm font-semibold text-white mb-3">Purchase vs Sales Summary</h3>
+       <div id="report-summary" class="space-y-3"></div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+       <h3 class="text-sm font-semibold text-white mb-3">Vendor Activity</h3>
+       <div id="report-vendors" class="space-y-2"></div>
+       <div id="report-vendor-empty" class="text-xs text-slate-600 text-center py-4">
+        No data yet.
+       </div>
+      </div>
+     </div>
+    </section>
+   </main>
+  </div><!-- MODAL -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black/60 z-40 hidden items-center justify-center" onclick="if(event.target===this)closeModal()">
+   <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md mx-4 shadow-2xl confirm-overlay">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800">
+     <h3 id="modal-title" class="text-sm font-bold text-white">Add</h3><button onclick="closeModal()" class="text-slate-500 hover:text-white transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <form id="modal-form" onsubmit="handleModalSubmit(event)" class="p-5 space-y-3">
+     <div id="modal-fields"></div>
+     <div class="flex gap-2 pt-2">
+      <button type="button" onclick="closeModal()" class="flex-1 text-xs py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white transition">Cancel</button> <button type="submit" id="modal-submit" class="flex-1 text-xs py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold transition">Save</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- DELETE CONFIRM -->
+  <div id="confirm-overlay" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center" onclick="if(event.target===this)closeConfirm()">
+   <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-sm mx-4 p-5 shadow-2xl confirm-overlay text-center">
+    <div class="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3"><i data-lucide="trash-2" class="w-5 h-5 text-red-400"></i>
+    </div>
+    <p class="text-sm text-white font-semibold mb-1">Delete this record?</p>
+    <p class="text-xs text-slate-500 mb-4">This action cannot be undone.</p>
+    <div class="flex gap-2">
+     <button onclick="closeConfirm()" class="flex-1 text-xs py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white transition">Cancel</button> <button id="confirm-delete-btn" class="flex-1 text-xs py-2 rounded-lg bg-red-500 hover:bg-red-400 text-white font-semibold transition">Delete</button>
+    </div>
+   </div>
+  </div><!-- BULK UPDATE MODAL -->
+  <div id="bulk-modal-overlay" class="fixed inset-0 bg-black/60 z-40 hidden items-center justify-center overflow-auto" onclick="if(event.target===this)closeBulkUpdate()">
+   <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-2xl mx-4 my-8 shadow-2xl confirm-overlay">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800 sticky top-0 bg-slate-900">
+     <h3 class="text-sm font-bold text-white">Bulk Update Inventory</h3><button onclick="closeBulkUpdate()" class="text-slate-500 hover:text-white transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-5 space-y-4 max-h-[60vh] overflow-auto">
+     <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+      <p class="text-xs text-slate-400 mb-2">Select products to update and enter new quantities below.</p>
+      <div id="bulk-product-list" class="space-y-2 max-h-64 overflow-auto"></div>
+     </div>
+    </div>
+    <div class="flex gap-2 p-5 border-t border-slate-800">
+     <button onclick="closeBulkUpdate()" class="flex-1 text-xs py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white transition">Cancel</button> <button id="bulk-submit" onclick="handleBulkUpdate()" class="flex-1 text-xs py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold transition">Update Selected</button>
+    </div>
+   </div>
+  </div><!-- GITHUB BACKUP MODAL -->
+  <div id="github-modal" class="fixed inset-0 bg-black/60 z-40 hidden items-center justify-center" onclick="if(event.target===this)closeGitHubModal()">
+   <div class="bg-slate-900 border border-slate-800 rounded-xl w-full max-w-md mx-4 shadow-2xl confirm-overlay">
+    <div class="flex items-center justify-between px-5 py-3 border-b border-slate-800">
+     <h3 class="text-sm font-bold text-white">GitHub Backup</h3><button onclick="closeGitHubModal()" class="text-slate-500 hover:text-white transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-5 space-y-4">
+     <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-xs text-slate-400 space-y-2">
+      <p class="font-semibold text-slate-300">Setup Instructions:</p>
+      <ol class="list-decimal list-inside space-y-1">
+       <li>Go to <span class="mono bg-slate-900 px-1 rounded">github.com/settings/tokens</span></li>
+       <li>Create a new token with <span class="font-medium">repo</span> scope</li>
+       <li>Copy your personal access token</li>
+       <li>Paste it below and choose a repository name</li>
+      </ol>
+     </div>
+     <form onsubmit="handleGitHubBackup(event)" class="space-y-3">
+      <div>
+       <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">GitHub Token</label> <input id="github-token" type="password" class="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs px-3 py-2 text-slate-200" placeholder="ghp_xxxxxxxxxxxx" required>
+       <p class="text-[10px] text-slate-600 mt-1">🔒 Token is never stored, only used during this session</p>
+      </div>
+      <div>
+       <label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">Repository Name</label> <input id="github-repo" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs px-3 py-2 text-slate-200" placeholder="warehouse-backup" value="warehouse-backup" required>
+      </div>
+      <div class="flex gap-2 pt-2">
+       <button type="button" onclick="closeGitHubModal()" class="flex-1 text-xs py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white transition">Cancel</button> <button type="submit" id="github-submit" class="flex-1 text-xs py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-semibold transition flex items-center justify-center gap-1.5"> <i data-lucide="upload" class="w-3 h-3"></i> Backup Now </button>
+      </div>
+     </form>
+    </div>
+   </div>
+  </div>
+  <script>
+// ===== STATE =====
+let allData = [];
+let currentPage = 'dashboard';
+let currentModalType = null;
+let editingRecord = null;
+let pendingDeleteRecord = null;
+
+// ===== CONFIG =====
+const defaultConfig = {
+  company_name: 'BHATTI',
+  dashboard_subtitle: 'Warehouse Management',
+  background_color: '#020617',
+  surface_color: '#0f172a',
+  text_color: '#e2e8f0',
+  primary_action: '#22d3ee',
+  secondary_action: '#64748b',
+  font_family: 'DM Sans',
+  font_size: 14
+};
+
+// ===== HELPERS =====
+function toast(msg, type='success') {
+  const c = document.getElementById('toast-container');
+  const d = document.createElement('div');
+  const colors = type==='success' ? 'bg-emerald-600' : type==='error' ? 'bg-red-600' : 'bg-amber-600';
+  d.className = `toast ${colors} text-white text-xs px-4 py-2 rounded-lg shadow-lg`;
+  d.textContent = msg;
+  c.appendChild(d);
+  setTimeout(()=>d.remove(), 3000);
+}
+
+function fmt(n) { return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0); }
+function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
+
+function byType(t) { return allData.filter(r=>r.type===t); }
+
+// ===== NAVIGATION =====
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('[id^="page-"]').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('page-'+page)?.classList.remove('hidden');
+  document.querySelectorAll('[data-nav]').forEach(b=>{b.classList.toggle('active',b.dataset.nav===page);});
+  renderCurrentPage();
+}
+
+// ===== RENDER =====
+function renderCurrentPage() {
+  if(currentPage==='dashboard') renderDashboard();
+  if(currentPage==='inventory') renderInventory();
+  if(currentPage==='purchase') renderPurchases();
+  if(currentPage==='sales') renderSales();
+  if(currentPage==='transfers') renderTransfers();
+  if(currentPage==='vendors') renderVendors();
+  if(currentPage==='reports') renderReports();
+}
+
+function renderDashboard() {
+  const products = byType('product'), purchases = byType('purchase'), sales = byType('sale');
+  document.getElementById('stat-products').textContent = products.length;
+  document.getElementById('stat-stock').textContent = products.reduce((s,p)=>s+(p.quantity||0),0);
+  document.getElementById('stat-purchases').textContent = purchases.length;
+  document.getElementById('stat-sales').textContent = sales.length;
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  // Recent activity
+  const recent = [...allData].filter(r=>r.date).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+  const ra = document.getElementById('recent-activity');
+  if(!recent.length) { ra.innerHTML='<div class="px-4 py-6 text-center text-xs text-slate-600">No activity yet.</div>'; }
+  else {
+    ra.innerHTML = recent.map(r=>{
+      const icon = r.type==='product'?'package':r.type==='purchase'?'shopping-cart':r.type==='sale'?'trending-up':r.type==='vendor'?'users':'file';
+      const color = r.type==='product'?'cyan':r.type==='purchase'?'amber':r.type==='sale'?'emerald':'violet';
+      return `<div class="px-4 py-2.5 flex items-center gap-3 text-xs"><div class="w-6 h-6 rounded bg-${color}-500/10 flex items-center justify-center shrink-0"><i data-lucide="${icon}" class="w-3 h-3 text-${color}-400"></i></div><div class="flex-1 min-w-0"><span class="text-slate-300 truncate block">${r.name||'Unnamed'}</span><span class="text-slate-600">${r.type} &middot; ${fmtDate(r.date)}</span></div>${r.total?`<span class="mono text-slate-400">${fmt(r.total)}</span>`:''}</div>`;
+    }).join('');
+    lucide.createIcons();
+  }
+
+  // Low stock
+  const low = products.filter(p=>(p.quantity||0)<10);
+  const ls = document.getElementById('low-stock');
+  if(!low.length) { ls.innerHTML='<div class="px-4 py-4 text-center text-xs text-slate-600">No low stock items.</div>'; }
+  else {
+    ls.innerHTML = low.map(p=>`<div class="px-4 py-2.5 flex items-center justify-between text-xs"><span class="text-slate-300">${p.name}</span><span class="mono text-amber-400 font-semibold">${p.quantity} left</span></div>`).join('');
+  }
+}
+
+function renderInventory() {
+  const search = (document.getElementById('inv-search')?.value||'').toLowerCase();
+  const catFilter = document.getElementById('inv-cat-filter')?.value||'';
+  let products = byType('product');
+
+  // Populate category filter
+  const cats = [...new Set(products.map(p=>p.category).filter(Boolean))];
+  const sel = document.getElementById('inv-cat-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option value="${c}"${c===current?' selected':''}>${c}</option>`).join('');
+
+  if(search) products = products.filter(p=>(p.name||'').toLowerCase().includes(search)||(p.sku||'').toLowerCase().includes(search));
+  if(catFilter) products = products.filter(p=>p.category===catFilter);
+
+  const tb = document.getElementById('inv-table');
+  const empty = document.getElementById('inv-empty');
+  if(!products.length) { tb.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tb.innerHTML = products.map(p=>{
+    const val = (p.quantity||0)*(p.unit_price||0);
+    const qClass = (p.quantity||0)<10?'text-amber-400':'text-slate-300';
+    const backendId = p.__backendId ? `'${p.__backendId}'` : 'null';
+    return `<tr class="hover:bg-slate-800/50"><td class="px-4 py-2.5 mono text-slate-500">${p.sku||'-'}</td><td class="px-4 py-2.5 text-white font-medium">${p.name}</td><td class="px-4 py-2.5 text-slate-400">${p.category||'-'}</td><td class="px-4 py-2.5 text-right mono ${qClass}">${p.quantity||0}</td><td class="px-4 py-2.5 text-right mono text-slate-400">${fmt(p.unit_price)}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${fmt(val)}</td><td class="px-4 py-2.5 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editRecord(${backendId})" class="p-1 hover:bg-slate-700 rounded transition"><i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i></button><button onclick="confirmDelete(${backendId})" class="p-1 hover:bg-red-900/30 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button></div></td></tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderPurchases() {
+  const items = byType('purchase').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const tb = document.getElementById('purchase-table');
+  const empty = document.getElementById('purchase-empty');
+  if(!items.length) { tb.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tb.innerHTML = items.map(p=>{
+    const sc = p.status==='received'?'emerald':p.status==='pending'?'amber':'slate';
+    const backendId = p.__backendId ? `'${p.__backendId}'` : 'null';
+    return `<tr class="hover:bg-slate-800/50"><td class="px-4 py-2.5 text-slate-400">${fmtDate(p.date)}</td><td class="px-4 py-2.5 text-white">${p.name}</td><td class="px-4 py-2.5 text-slate-400">${p.vendor||'-'}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${p.quantity||0}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${fmt(p.total)}</td><td class="px-4 py-2.5"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-${sc}-500/10 text-${sc}-400">${p.status||'pending'}</span></td><td class="px-4 py-2.5 text-center"><div class="flex items-center justify-center gap-1">${p.status==='pending'?`<button onclick="markPurchaseReceived(${backendId})" class="p-1 hover:bg-emerald-900/30 rounded transition" title="Mark as received"><i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i></button>`:''}<button onclick="openChaseModal(${backendId})" class="p-1 hover:bg-blue-900/30 rounded transition" title="Follow up"><i data-lucide="send" class="w-3.5 h-3.5 text-blue-400"></i></button><button onclick="confirmDelete(${backendId})" class="p-1 hover:bg-red-900/30 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button></div></td></tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderSales() {
+  const items = byType('sale').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const tb = document.getElementById('sales-table');
+  const empty = document.getElementById('sales-empty');
+  if(!items.length) { tb.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tb.innerHTML = items.map(p=>{
+    const sc = p.status==='completed'?'emerald':p.status==='pending'?'amber':'slate';
+    const backendId = p.__backendId ? `'${p.__backendId}'` : 'null';
+    return `<tr class="hover:bg-slate-800/50"><td class="px-4 py-2.5 text-slate-400">${fmtDate(p.date)}</td><td class="px-4 py-2.5 text-white">${p.name}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${p.quantity||0}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${fmt(p.total)}</td><td class="px-4 py-2.5"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-${sc}-500/10 text-${sc}-400">${p.status||'pending'}</span></td><td class="px-4 py-2.5 text-center"><button onclick="confirmDelete(${backendId})" class="p-1 hover:bg-red-900/30 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button></td></tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderTransfers() {
+  const items = byType('transfer').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const tb = document.getElementById('transfer-table');
+  const empty = document.getElementById('transfer-empty');
+  if(!items.length) { tb.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tb.innerHTML = items.map(t=>{
+    const sc = t.status==='completed'?'emerald':t.status==='pending'?'amber':t.status==='in-transit'?'blue':'slate';
+    const backendId = t.__backendId ? `'${t.__backendId}'` : 'null';
+    return `<tr class="hover:bg-slate-800/50"><td class="px-4 py-2.5 text-slate-400">${fmtDate(t.date)}</td><td class="px-4 py-2.5 text-white">${t.name}</td><td class="px-4 py-2.5 text-slate-400">${t.from_location||'-'}</td><td class="px-4 py-2.5 text-slate-400">${t.to_location||'-'}</td><td class="px-4 py-2.5 text-right mono text-slate-300">${t.quantity||0}</td><td class="px-4 py-2.5"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-${sc}-500/10 text-${sc}-400">${t.status||'pending'}</span></td><td class="px-4 py-2.5 text-slate-500 truncate max-w-[150px]">${t.notes||'-'}</td><td class="px-4 py-2.5 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editRecord(${backendId})" class="p-1 hover:bg-slate-700 rounded transition"><i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i></button><button onclick="confirmDelete(${backendId})" class="p-1 hover:bg-red-900/30 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button></div></td></tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderVendors() {
+  const items = byType('vendor');
+  const tb = document.getElementById('vendor-table');
+  const empty = document.getElementById('vendor-empty');
+  if(!items.length) { tb.innerHTML=''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tb.innerHTML = items.map(v=>{
+    const sc = v.status==='active'?'emerald':'slate';
+    const backendId = v.__backendId ? `'${v.__backendId}'` : 'null';
+    return `<tr class="hover:bg-slate-800/50"><td class="px-4 py-2.5 text-white font-medium">${v.name}</td><td class="px-4 py-2.5 text-slate-400">${v.category||'-'}</td><td class="px-4 py-2.5"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-medium bg-${sc}-500/10 text-${sc}-400">${v.status||'active'}</span></td><td class="px-4 py-2.5 text-slate-500 truncate max-w-[200px]">${v.notes||'-'}</td><td class="px-4 py-2.5 text-center"><div class="flex items-center justify-center gap-1"><button onclick="editRecord(${backendId})" class="p-1 hover:bg-slate-700 rounded transition"><i data-lucide="edit" class="w-3.5 h-3.5 text-slate-500"></i></button><button onclick="confirmDelete(${backendId})" class="p-1 hover:bg-red-900/30 rounded transition"><i data-lucide="trash-2" class="w-3.5 h-3.5 text-red-400"></i></button></div></td></tr>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderReports() {
+  const products = byType('product'), purchases = byType('purchase'), sales = byType('sale'), vendors = byType('vendor');
+
+  // Categories
+  const catMap = {};
+  products.forEach(p=>{ const c=p.category||'Uncategorized'; catMap[c]=(catMap[c]||0)+(p.quantity||0); });
+  const catEl = document.getElementById('report-categories');
+  const catEmpty = document.getElementById('report-cat-empty');
+  const catEntries = Object.entries(catMap);
+  if(!catEntries.length) { catEl.innerHTML=''; catEmpty.classList.remove('hidden'); }
+  else {
+    catEmpty.classList.add('hidden');
+    const maxQ = Math.max(...catEntries.map(e=>e[1]),1);
+    catEl.innerHTML = catEntries.map(([c,q])=>`<div><div class="flex justify-between text-xs mb-1"><span class="text-slate-300">${c}</span><span class="mono text-slate-500">${q}</span></div><div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-cyan-500 rounded-full" style="width:${(q/maxQ)*100}%"></div></div></div>`).join('');
+  }
+
+  // Top products
+  const topProds = [...products].sort((a,b)=>((b.quantity||0)*(b.unit_price||0))-((a.quantity||0)*(a.unit_price||0))).slice(0,5);
+  const topEl = document.getElementById('report-top');
+  const topEmpty = document.getElementById('report-top-empty');
+  if(!topProds.length) { topEl.innerHTML=''; topEmpty.classList.remove('hidden'); }
+  else {
+    topEmpty.classList.add('hidden');
+    const maxV = Math.max(...topProds.map(p=>(p.quantity||0)*(p.unit_price||0)),1);
+    topEl.innerHTML = topProds.map(p=>{const v=(p.quantity||0)*(p.unit_price||0);return `<div><div class="flex justify-between text-xs mb-1"><span class="text-slate-300">${p.name}</span><span class="mono text-slate-500">${fmt(v)}</span></div><div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:${(v/maxV)*100}%"></div></div></div>`;}).join('');
+  }
+
+  // Summary
+  const totalPurch = purchases.reduce((s,p)=>s+(p.total||0),0);
+  const totalSales = sales.reduce((s,p)=>s+(p.total||0),0);
+  document.getElementById('report-summary').innerHTML = `
+    <div class="flex justify-between text-xs"><span class="text-slate-400">Total Purchases</span><span class="mono text-amber-400 font-semibold">${fmt(totalPurch)}</span></div>
+    <div class="flex justify-between text-xs"><span class="text-slate-400">Total Sales</span><span class="mono text-emerald-400 font-semibold">${fmt(totalSales)}</span></div>
+    <div class="border-t border-slate-800 pt-2 flex justify-between text-xs"><span class="text-slate-300 font-semibold">Net</span><span class="mono font-bold ${totalSales-totalPurch>=0?'text-emerald-400':'text-red-400'}">${fmt(totalSales-totalPurch)}</span></div>
+    <div class="flex justify-between text-xs"><span class="text-slate-400">Inventory Value</span><span class="mono text-cyan-400 font-semibold">${fmt(products.reduce((s,p)=>s+(p.quantity||0)*(p.unit_price||0),0))}</span></div>`;
+
+  // Vendor activity
+  const vMap = {};
+  purchases.forEach(p=>{if(p.vendor) vMap[p.vendor]=(vMap[p.vendor]||0)+(p.total||0);});
+  const vEl = document.getElementById('report-vendors');
+  const vEmpty = document.getElementById('report-vendor-empty');
+  const vEntries = Object.entries(vMap);
+  if(!vEntries.length) { vEl.innerHTML=''; vEmpty.classList.remove('hidden'); }
+  else {
+    vEmpty.classList.add('hidden');
+    const maxVV = Math.max(...vEntries.map(e=>e[1]),1);
+    vEl.innerHTML = vEntries.sort((a,b)=>b[1]-a[1]).map(([v,t])=>`<div><div class="flex justify-between text-xs mb-1"><span class="text-slate-300">${v}</span><span class="mono text-slate-500">${fmt(t)}</span></div><div class="h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-violet-500 rounded-full" style="width:${(t/maxVV)*100}%"></div></div></div>`).join('');
+  }
+}
+
+// ===== MODAL =====
+function fieldHTML(id, label, type='text', opts={}) {
+  if(type==='select') {
+    return `<div><label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1" for="f-${id}">${label}</label><select id="f-${id}" class="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs px-3 py-2 text-slate-200">${(opts.options||[]).map(o=>`<option value="${o}">${o}</option>`).join('')}</select></div>`;
+  }
+  if(type==='textarea') {
+    return `<div><label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1" for="f-${id}">${label}</label><textarea id="f-${id}" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs px-3 py-2 text-slate-200 resize-none" placeholder="${opts.placeholder||''}"></textarea></div>`;
+  }
+  return `<div><label class="text-[10px] text-slate-500 uppercase tracking-wider block mb-1" for="f-${id}">${label}</label><input id="f-${id}" type="${type}" ${type==='number'?'step="any" min="0"':''} class="w-full bg-slate-800 border border-slate-700 rounded-lg text-xs px-3 py-2 text-slate-200" placeholder="${opts.placeholder||''}" ${opts.required?'required':''}></div>`;
+}
+
+function openModal(type, record=null) {
+  currentModalType = type;
+  editingRecord = record;
+  const fields = document.getElementById('modal-fields');
+  const title = document.getElementById('modal-title');
+  const vendors = byType('vendor').map(v=>v.name).filter(Boolean);
+  const products = byType('product').map(p=>p.name).filter(Boolean);
+
+  if(type==='product') {
+    title.textContent = record ? 'Edit Product' : 'Add Product';
+    fields.innerHTML = `<div class="space-y-3">${fieldHTML('name','Product Name','text',{required:true,placeholder:'Widget A'})}${fieldHTML('sku','SKU','text',{placeholder:'WDG-001'})}${fieldHTML('category','Category','text',{placeholder:'Electronics'})}${fieldHTML('quantity','Quantity','number',{required:true})}${fieldHTML('unit_price','Unit Price ($)','number',{required:true})}</div>`;
+  } else if(type==='purchase') {
+    title.textContent = 'New Purchase';
+    const prodOpts = products.length ? products : ['(Add products first)'];
+    const vendOpts = vendors.length ? vendors : ['(Add vendors first)'];
+    fields.innerHTML = `<div class="space-y-3">${fieldHTML('name','Product','select',{options:prodOpts})}${fieldHTML('vendor','Vendor','select',{options:vendOpts})}${fieldHTML('quantity','Quantity','number',{required:true})}${fieldHTML('total','Total Cost ($)','number',{required:true})}${fieldHTML('date','Date','date')}${fieldHTML('status','Status','select',{options:['pending','received','cancelled']})}</div>`;
+  } else if(type==='sale') {
+    title.textContent = 'New Sale';
+    const prodOpts = products.length ? products : ['(Add products first)'];
+    fields.innerHTML = `<div class="space-y-3">${fieldHTML('name','Product','select',{options:prodOpts})}${fieldHTML('quantity','Quantity','number',{required:true})}${fieldHTML('total','Total Amount ($)','number',{required:true})}${fieldHTML('date','Date','date')}${fieldHTML('status','Status','select',{options:['pending','completed','cancelled']})}</div>`;
+  } else if(type==='transfer') {
+    title.textContent = record ? 'Edit Transfer' : 'New Transfer';
+    const prodOpts = products.length ? products : ['(Add products first)'];
+    const locations = ['Main Warehouse', 'Secondary Warehouse', 'Distribution Center', 'Local Store', 'Regional Hub'];
+    fields.innerHTML = `<div class="space-y-3">${fieldHTML('name','Product','select',{options:prodOpts})}${fieldHTML('from_location','From Location','select',{options:locations})}${fieldHTML('to_location','To Location','select',{options:locations})}${fieldHTML('quantity','Quantity','number',{required:true})}${fieldHTML('date','Date','date')}${fieldHTML('status','Status','select',{options:['pending','in-transit','completed','cancelled']})}${fieldHTML('notes','Notes','textarea',{placeholder:'Transfer notes...'})}</div>`;
+  } else if(type==='vendor') {
+    title.textContent = record ? 'Edit Vendor' : 'Add Vendor';
+    fields.innerHTML = `<div class="space-y-3">${fieldHTML('name','Vendor Name','text',{required:true,placeholder:'Acme Corp'})}${fieldHTML('category','Category','text',{placeholder:'Raw Materials'})}${fieldHTML('status','Status','select',{options:['active','inactive']})}${fieldHTML('notes','Notes','textarea',{placeholder:'Additional info...'})}</div>`;
+  }
+
+  // Prefill for edit
+  if(record) {
+    ['name','sku','category','quantity','unit_price','vendor','total','date','status','notes','from_location','to_location'].forEach(f=>{
+      const el = document.getElementById('f-'+f);
+      if(el && record[f]!=null) el.value = record[f];
+    });
+  }
+
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  document.getElementById('modal-overlay').classList.remove('flex');
+  currentModalType = null;
+  editingRecord = null;
+}
+
+async function handleModalSubmit(e) {
+  e.preventDefault();
+  
+  // Handle chase follow-up submission
+  if(currentModalType === 'chase') {
+    const notes = document.getElementById('f-chase_notes')?.value || '';
+    handleChaseSubmit(notes);
+    return;
+  }
+  
+  if(allData.length >= 999) { toast('Record limit reached (999). Delete some records first.','error'); return; }
+
+  const btn = document.getElementById('modal-submit');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  const get = id => { const el=document.getElementById('f-'+id); return el?el.value:''; };
+  const data = { type: currentModalType, name: get('name'), sku: get('sku'), category: get('category'), quantity: parseFloat(get('quantity'))||0, unit_price: parseFloat(get('unit_price'))||0, vendor: get('vendor'), status: get('status')||'active', date: get('date')||new Date().toISOString(), notes: get('notes'), total: parseFloat(get('total'))||0, from_location: get('from_location'), to_location: get('to_location') };
+
+  let result;
+  if(editingRecord) {
+    result = await window.dataSdk.update({...editingRecord, ...data});
+  } else {
+    result = await window.dataSdk.create(data);
+  }
+
+  btn.disabled = false; btn.textContent = 'Save';
+  if(result.isOk) { toast(editingRecord?'Record updated':'Record added'); closeModal(); }
+  else { toast('Failed to save. Try again.','error'); }
+}
+
+// ===== EDIT / DELETE =====
+function editRecord(backendId) {
+  const record = allData.find(r=>r.__backendId===backendId);
+  if(!record) return;
+  const type = record.type;
+  openModal(type, record);
+}
+
+function confirmDelete(backendId) {
+  pendingDeleteRecord = allData.find(r=>r.__backendId===backendId);
+  if(!pendingDeleteRecord) return;
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+  document.getElementById('confirm-overlay').classList.add('flex');
+  document.getElementById('confirm-delete-btn').onclick = async ()=>{
+    const btn = document.getElementById('confirm-delete-btn');
+    btn.disabled=true; btn.textContent='Deleting...';
+    const result = await window.dataSdk.delete(pendingDeleteRecord);
+    btn.disabled=false; btn.textContent='Delete';
+    if(result.isOk) { toast('Record deleted'); closeConfirm(); }
+    else { toast('Delete failed','error'); }
+  };
+  lucide.createIcons();
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.add('hidden');
+  document.getElementById('confirm-overlay').classList.remove('flex');
+  pendingDeleteRecord = null;
+}
+
+// ===== PURCHASE ACTIONS =====
+async function markPurchaseReceived(backendId) {
+  const record = allData.find(r=>r.__backendId===backendId);
+  if(!record) return;
+  
+  const result = await window.dataSdk.update({
+    ...record,
+    status: 'received'
+  });
+  
+  if(result.isOk) {
+    toast('Purchase marked as received');
+  } else {
+    toast('Failed to update','error');
+  }
+}
+
+let chaseRecord = null;
+
+function openChaseModal(backendId) {
+  chaseRecord = allData.find(r=>r.__backendId===backendId);
+  if(!chaseRecord) return;
+  
+  const fields = document.getElementById('modal-fields');
+  const title = document.getElementById('modal-title');
+  
+  title.textContent = 'Follow Up: ' + chaseRecord.name;
+  fields.innerHTML = `<div class="space-y-3">
+    <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 text-xs text-slate-400">
+      <div class="mb-2"><span class="font-medium text-slate-300">Vendor:</span> ${chaseRecord.vendor||'N/A'}</div>
+      <div class="mb-2"><span class="font-medium text-slate-300">Order Date:</span> ${fmtDate(chaseRecord.date)}</div>
+      <div><span class="font-medium text-slate-300">Amount:</span> ${fmt(chaseRecord.total)}</div>
+    </div>
+    ${fieldHTML('chase_notes','Follow-up Notes','textarea',{placeholder:'Add your follow-up message...'})}
+  </div>`;
+  
+  document.getElementById('modal-submit').textContent = 'Send Follow-up';
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('modal-overlay').classList.add('flex');
+}
+
+async function handleChaseSubmit(notes) {
+  if(!chaseRecord) return;
+  
+  if(!notes.trim()) {
+    toast('Please add follow-up notes','error');
+    return;
+  }
+  
+  const btn = document.getElementById('modal-submit');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  
+  // Update the record with chase note
+  const result = await window.dataSdk.update({
+    ...chaseRecord,
+    notes: notes,
+    status: 'pending' // Keep as pending since we're following up
+  });
+  
+  btn.disabled = false;
+  btn.textContent = 'Send Follow-up';
+  
+  if(result.isOk) {
+    toast('Follow-up recorded for ' + chaseRecord.vendor);
+    closeModal();
+    chaseRecord = null;
+  } else {
+    toast('Failed to save follow-up','error');
+  }
+}
+
+// ===== BULK UPDATE =====
+let bulkUpdates = {};
+
+function openBulkUpdate() {
+  bulkUpdates = {};
+  const products = byType('product');
+  const list = document.getElementById('bulk-product-list');
+  
+  if(!products.length) { toast('No products to update','error'); return; }
+  
+  list.innerHTML = products.map(p=>`
+    <div class="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <input type="checkbox" id="bulk-cb-${p.__backendId}" onchange="updateBulkSelection('${p.__backendId}')" class="w-4 h-4 rounded bg-slate-700 border-slate-600 accent-cyan-500 cursor-pointer">
+      <label for="bulk-cb-${p.__backendId}" class="flex-1 min-w-0 cursor-pointer">
+        <div class="text-xs text-white font-medium">${p.name}</div>
+        <div class="text-[10px] text-slate-500">SKU: ${p.sku||'-'} | Current: ${p.quantity||0}</div>
+      </label>
+      <input type="number" min="0" step="any" placeholder="New qty" data-product-id="${p.__backendId}" class="bulk-qty-input w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white text-right placeholder-slate-600" disabled>
+    </div>
+  `).join('');
+  
+  document.getElementById('bulk-modal-overlay').classList.remove('hidden');
+  document.getElementById('bulk-modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function updateBulkSelection(backendId) {
+  const cb = document.getElementById(`bulk-cb-${backendId}`);
+  const input = document.querySelector(`input[data-product-id="${backendId}"]`);
+  if(cb.checked) {
+    bulkUpdates[backendId] = true;
+    input.disabled = false;
+    input.focus();
+  } else {
+    delete bulkUpdates[backendId];
+    input.disabled = true;
+    input.value = '';
+  }
+}
+
+async function handleBulkUpdate() {
+  const selected = Object.keys(bulkUpdates);
+  if(!selected.length) { toast('Select at least one product','error'); return; }
+
+  const btn = document.getElementById('bulk-submit');
+  btn.disabled = true; btn.textContent = 'Updating...';
+
+  let updated = 0;
+  let failed = 0;
+
+  for(const backendId of selected) {
+    const record = allData.find(r=>r.__backendId===backendId);
+    const input = document.querySelector(`input[data-product-id="${backendId}"]`);
+    const newQty = parseFloat(input.value);
+
+    if(isNaN(newQty)) continue;
+
+    const result = await window.dataSdk.update({
+      ...record,
+      quantity: newQty
+    });
+
+    if(result.isOk) updated++;
+    else failed++;
+  }
+
+  btn.disabled = false; btn.textContent = 'Update Selected';
+  
+  if(failed===0) {
+    toast(`Updated ${updated} product${updated!==1?'s':''}`);
+    closeBulkUpdate();
+  } else {
+    toast(`Updated ${updated}, failed ${failed}`,'error');
+  }
+}
+
+function closeBulkUpdate() {
+  document.getElementById('bulk-modal-overlay').classList.add('hidden');
+  document.getElementById('bulk-modal-overlay').classList.remove('flex');
+  bulkUpdates = {};
+}
+
+// ===== BULK UPDATE PURCHASES =====
+let bulkUpdatesPurchase = {};
+
+function openBulkUpdatePurchase() {
+  bulkUpdatesPurchase = {};
+  const purchases = byType('purchase');
+  const list = document.getElementById('bulk-product-list');
+  
+  if(!purchases.length) { toast('No purchases to update','error'); return; }
+  
+  list.innerHTML = purchases.map(p=>`
+    <div class="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <input type="checkbox" id="bulk-cb-purchase-${p.__backendId}" onchange="updateBulkSelectionPurchase('${p.__backendId}')" class="w-4 h-4 rounded bg-slate-700 border-slate-600 accent-cyan-500 cursor-pointer">
+      <label for="bulk-cb-purchase-${p.__backendId}" class="flex-1 min-w-0 cursor-pointer">
+        <div class="text-xs text-white font-medium">${p.name} - ${p.vendor||'N/A'}</div>
+        <div class="text-[10px] text-slate-500">Date: ${fmtDate(p.date)} | Qty: ${p.quantity||0} | Total: ${fmt(p.total)}</div>
+      </label>
+      <select data-purchase-id="${p.__backendId}" class="bulk-status-select bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white placeholder-slate-600 disabled" disabled>
+        <option value="pending" ${p.status==='pending'?'selected':''}>pending</option>
+        <option value="received" ${p.status==='received'?'selected':''}>received</option>
+        <option value="cancelled" ${p.status==='cancelled'?'selected':''}>cancelled</option>
+      </select>
+    </div>
+  `).join('');
+  
+  document.getElementById('bulk-modal-overlay').classList.remove('hidden');
+  document.getElementById('bulk-modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function updateBulkSelectionPurchase(backendId) {
+  const cb = document.getElementById(`bulk-cb-purchase-${backendId}`);
+  const select = document.querySelector(`select[data-purchase-id="${backendId}"]`);
+  if(cb.checked) {
+    bulkUpdatesPurchase[backendId] = true;
+    select.disabled = false;
+    select.focus();
+  } else {
+    delete bulkUpdatesPurchase[backendId];
+    select.disabled = true;
+  }
+}
+
+async function handleBulkUpdatePurchase() {
+  const selected = Object.keys(bulkUpdatesPurchase);
+  if(!selected.length) { toast('Select at least one purchase','error'); return; }
+
+  const btn = document.getElementById('bulk-submit');
+  btn.disabled = true; btn.textContent = 'Updating...';
+
+  let updated = 0;
+  let failed = 0;
+
+  for(const backendId of selected) {
+    const record = allData.find(r=>r.__backendId===backendId);
+    const select = document.querySelector(`select[data-purchase-id="${backendId}"]`);
+    const newStatus = select.value;
+
+    const result = await window.dataSdk.update({
+      ...record,
+      status: newStatus
+    });
+
+    if(result.isOk) updated++;
+    else failed++;
+  }
+
+  btn.disabled = false; btn.textContent = 'Update Selected';
+  
+  if(failed===0) {
+    toast(`Updated ${updated} purchase${updated!==1?'es':''}`);
+    closeBulkUpdate();
+  } else {
+    toast(`Updated ${updated}, failed ${failed}`,'error');
+  }
+}
+
+// ===== BULK UPDATE SALES =====
+let bulkUpdatesSales = {};
+
+function openBulkUpdateSales() {
+  bulkUpdatesSales = {};
+  const sales = byType('sale');
+  const list = document.getElementById('bulk-product-list');
+  
+  if(!sales.length) { toast('No sales to update','error'); return; }
+  
+  list.innerHTML = sales.map(s=>`
+    <div class="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <input type="checkbox" id="bulk-cb-sale-${s.__backendId}" onchange="updateBulkSelectionSales('${s.__backendId}')" class="w-4 h-4 rounded bg-slate-700 border-slate-600 accent-cyan-500 cursor-pointer">
+      <label for="bulk-cb-sale-${s.__backendId}" class="flex-1 min-w-0 cursor-pointer">
+        <div class="text-xs text-white font-medium">${s.name}</div>
+        <div class="text-[10px] text-slate-500">Date: ${fmtDate(s.date)} | Qty: ${s.quantity||0} | Total: ${fmt(s.total)}</div>
+      </label>
+      <select data-sale-id="${s.__backendId}" class="bulk-status-select bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white placeholder-slate-600 disabled" disabled>
+        <option value="pending" ${s.status==='pending'?'selected':''}>pending</option>
+        <option value="completed" ${s.status==='completed'?'selected':''}>completed</option>
+        <option value="cancelled" ${s.status==='cancelled'?'selected':''}>cancelled</option>
+      </select>
+    </div>
+  `).join('');
+  
+  document.getElementById('bulk-modal-overlay').classList.remove('hidden');
+  document.getElementById('bulk-modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function updateBulkSelectionSales(backendId) {
+  const cb = document.getElementById(`bulk-cb-sale-${backendId}`);
+  const select = document.querySelector(`select[data-sale-id="${backendId}"]`);
+  if(cb.checked) {
+    bulkUpdatesSales[backendId] = true;
+    select.disabled = false;
+    select.focus();
+  } else {
+    delete bulkUpdatesSales[backendId];
+    select.disabled = true;
+  }
+}
+
+async function handleBulkUpdateSales() {
+  const selected = Object.keys(bulkUpdatesSales);
+  if(!selected.length) { toast('Select at least one sale','error'); return; }
+
+  const btn = document.getElementById('bulk-submit');
+  btn.disabled = true; btn.textContent = 'Updating...';
+
+  let updated = 0;
+  let failed = 0;
+
+  for(const backendId of selected) {
+    const record = allData.find(r=>r.__backendId===backendId);
+    const select = document.querySelector(`select[data-sale-id="${backendId}"]`);
+    const newStatus = select.value;
+
+    const result = await window.dataSdk.update({
+      ...record,
+      status: newStatus
+    });
+
+    if(result.isOk) updated++;
+    else failed++;
+  }
+
+  btn.disabled = false; btn.textContent = 'Update Selected';
+  
+  if(failed===0) {
+    toast(`Updated ${updated} sale${updated!==1?'s':''}`);
+    closeBulkUpdate();
+  } else {
+    toast(`Updated ${updated}, failed ${failed}`,'error');
+  }
+}
+
+// ===== BULK UPDATE VENDORS =====
+let bulkUpdatesVendors = {};
+
+function openBulkUpdateVendors() {
+  bulkUpdatesVendors = {};
+  const vendors = byType('vendor');
+  const list = document.getElementById('bulk-product-list');
+  
+  if(!vendors.length) { toast('No vendors to update','error'); return; }
+  
+  list.innerHTML = vendors.map(v=>`
+    <div class="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <input type="checkbox" id="bulk-cb-vendor-${v.__backendId}" onchange="updateBulkSelectionVendors('${v.__backendId}')" class="w-4 h-4 rounded bg-slate-700 border-slate-600 accent-cyan-500 cursor-pointer">
+      <label for="bulk-cb-vendor-${v.__backendId}" class="flex-1 min-w-0 cursor-pointer">
+        <div class="text-xs text-white font-medium">${v.name}</div>
+        <div class="text-[10px] text-slate-500">Category: ${v.category||'-'} | Status: ${v.status||'active'}</div>
+      </label>
+      <select data-vendor-id="${v.__backendId}" class="bulk-status-select bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white placeholder-slate-600 disabled" disabled>
+        <option value="active" ${v.status==='active'?'selected':''}>active</option>
+        <option value="inactive" ${v.status==='inactive'?'selected':''}>inactive</option>
+      </select>
+    </div>
+  `).join('');
+  
+  document.getElementById('bulk-modal-overlay').classList.remove('hidden');
+  document.getElementById('bulk-modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function updateBulkSelectionVendors(backendId) {
+  const cb = document.getElementById(`bulk-cb-vendor-${backendId}`);
+  const select = document.querySelector(`select[data-vendor-id="${backendId}"]`);
+  if(cb.checked) {
+    bulkUpdatesVendors[backendId] = true;
+    select.disabled = false;
+    select.focus();
+  } else {
+    delete bulkUpdatesVendors[backendId];
+    select.disabled = true;
+  }
+}
+
+async function handleBulkUpdateVendors() {
+  const selected = Object.keys(bulkUpdatesVendors);
+  if(!selected.length) { toast('Select at least one vendor','error'); return; }
+
+  const btn = document.getElementById('bulk-submit');
+  btn.disabled = true; btn.textContent = 'Updating...';
+
+  let updated = 0;
+  let failed = 0;
+
+  for(const backendId of selected) {
+    const record = allData.find(r=>r.__backendId===backendId);
+    const select = document.querySelector(`select[data-vendor-id="${backendId}"]`);
+    const newStatus = select.value;
+
+    const result = await window.dataSdk.update({
+      ...record,
+      status: newStatus
+    });
+
+    if(result.isOk) updated++;
+    else failed++;
+  }
+
+  btn.disabled = false; btn.textContent = 'Update Selected';
+  
+  if(failed===0) {
+    toast(`Updated ${updated} vendor${updated!==1?'s':''}`);
+    closeBulkUpdate();
+  } else {
+    toast(`Updated ${updated}, failed ${failed}`,'error');
+  }
+}
+
+// ===== BULK UPDATE TRANSFERS =====
+let bulkUpdatesTransfers = {};
+
+function openBulkUpdateTransfers() {
+  bulkUpdatesTransfers = {};
+  const transfers = byType('transfer');
+  const list = document.getElementById('bulk-product-list');
+  
+  if(!transfers.length) { toast('No transfers to update','error'); return; }
+  
+  list.innerHTML = transfers.map(t=>`
+    <div class="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/50">
+      <input type="checkbox" id="bulk-cb-transfer-${t.__backendId}" onchange="updateBulkSelectionTransfers('${t.__backendId}')" class="w-4 h-4 rounded bg-slate-700 border-slate-600 accent-cyan-500 cursor-pointer">
+      <label for="bulk-cb-transfer-${t.__backendId}" class="flex-1 min-w-0 cursor-pointer">
+        <div class="text-xs text-white font-medium">${t.name}</div>
+        <div class="text-[10px] text-slate-500">${t.from_location||'-'} → ${t.to_location||'-'} | Qty: ${t.quantity||0} | Status: ${t.status||'pending'}</div>
+      </label>
+      <select data-transfer-id="${t.__backendId}" class="bulk-status-select bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-white placeholder-slate-600 disabled" disabled>
+        <option value="pending" ${t.status==='pending'?'selected':''}>pending</option>
+        <option value="in-transit" ${t.status==='in-transit'?'selected':''}>in-transit</option>
+        <option value="completed" ${t.status==='completed'?'selected':''}>completed</option>
+        <option value="cancelled" ${t.status==='cancelled'?'selected':''}>cancelled</option>
+      </select>
+    </div>
+  `).join('');
+  
+  document.getElementById('bulk-modal-overlay').classList.remove('hidden');
+  document.getElementById('bulk-modal-overlay').classList.add('flex');
+  lucide.createIcons();
+}
+
+function updateBulkSelectionTransfers(backendId) {
+  const cb = document.getElementById(`bulk-cb-transfer-${backendId}`);
+  const select = document.querySelector(`select[data-transfer-id="${backendId}"]`);
+  if(cb.checked) {
+    bulkUpdatesTransfers[backendId] = true;
+    select.disabled = false;
+    select.focus();
+  } else {
+    delete bulkUpdatesTransfers[backendId];
+    select.disabled = true;
+  }
+}
+
+async function handleBulkUpdateTransfers() {
+  const selected = Object.keys(bulkUpdatesTransfers);
+  if(!selected.length) { toast('Select at least one transfer','error'); return; }
+
+  const btn = document.getElementById('bulk-submit');
+  btn.disabled = true; btn.textContent = 'Updating...';
+
+  let updated = 0;
+  let failed = 0;
+
+  for(const backendId of selected) {
+    const record = allData.find(r=>r.__backendId===backendId);
+    const select = document.querySelector(`select[data-transfer-id="${backendId}"]`);
+    const newStatus = select.value;
+
+    const result = await window.dataSdk.update({
+      ...record,
+      status: newStatus
+    });
+
+    if(result.isOk) updated++;
+    else failed++;
+  }
+
+  btn.disabled = false; btn.textContent = 'Update Selected';
+  
+  if(failed===0) {
+    toast(`Updated ${updated} transfer${updated!==1?'s':''}`);
+    closeBulkUpdate();
+  } else {
+    toast(`Updated ${updated}, failed ${failed}`,'error');
+  }
+}
+
+// ===== CSV HELPERS =====
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let insideQuotes = false;
+  
+  for(let i = 0; i < line.length; i++) {
+    const char = line[i];
+    const nextChar = line[i + 1];
+    
+    if(char === '"') {
+      if(insideQuotes && nextChar === '"') {
+        current += '"';
+        i++; // Skip next quote
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+    } else if(char === ',' && !insideQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  result.push(current.trim());
+  return result;
+}
+
+// ===== CSV DOWNLOAD TEMPLATE =====
+function downloadStockTemplate() {
+  const products = byType('product');
+  
+  let csv = 'sku,product_name,current_qty,new_qty,reason\nWDG-001,Widget A,50,75,Bulk purchase received\nWDG-002,Widget B,30,45,Restock from supplier\nGAD-001,Gadget X,100,85,Inventory adjustment\nPRT-001,Part C,200,250,New shipment arrived';
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'stock-update-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Stock template downloaded');
+}
+
+function downloadTemplate() {
+  const csv = 'name,sku,category,quantity,unit_price\nWidget A,WDG-001,Electronics,50,19.99\nWidget B,WDG-002,Electronics,30,24.99\nGadget X,GAD-001,Accessories,100,9.99\nPart C,PRT-001,Components,200,5.50';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'inventory-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Template downloaded');
+}
+
+function downloadPurchaseTemplate() {
+  const vendors = byType('vendor').map(v=>v.name).filter(Boolean);
+  const products = byType('product').map(p=>p.name).filter(Boolean);
+  
+  const vendorList = vendors.length > 0 ? vendors.slice(0, 3).join(' or ') : 'Vendor Name';
+  const productList = products.length > 0 ? products.slice(0, 3).join(' or ') : 'Product Name';
+  
+  const csv = `name,vendor,quantity,total,date,status\n${productList},${vendorList},50,999.99,${new Date().toISOString().split('T')[0]},received\n${productList},${vendorList},100,1999.99,${new Date().toISOString().split('T')[0]},pending`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'purchases-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Purchase template downloaded');
+}
+
+function downloadSalesTemplate() {
+  const products = byType('product').map(p=>p.name).filter(Boolean);
+  const productList = products.length > 0 ? products.slice(0, 3).join(' or ') : 'Product Name';
+  
+  const csv = `name,quantity,total,date,status\n${productList},25,500.00,${new Date().toISOString().split('T')[0]},completed\n${productList},15,300.00,${new Date().toISOString().split('T')[0]},pending`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'sales-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Sales template downloaded');
+}
+
+function downloadVendorTemplate() {
+  const csv = `name,category,status,notes\nAcme Corp,Raw Materials,active,Primary supplier\nSupply Co,Components,active,Secondary supplier\nGlobal Trade,Accessories,inactive,Seasonal supplier`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'vendors-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Vendor template downloaded');
+}
+
+function downloadTransferTemplate() {
+  const products = byType('product').map(p=>p.name).filter(Boolean);
+  const productList = products.length > 0 ? products.slice(0, 3).join(' or ') : 'Product Name';
+  const locations = ['Main Warehouse', 'Secondary Warehouse', 'Distribution Center'];
+  
+  const csv = `name,from_location,to_location,quantity,date,status,notes\n${productList},${locations[0]},${locations[1]},25,${new Date().toISOString().split('T')[0]},completed,Transfer completed\n${productList},${locations[1]},${locations[2]},50,${new Date().toISOString().split('T')[0]},in-transit,In transit`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'transfers-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Transfer template downloaded');
+}
+
+// ===== CSV UPLOAD =====
+async function handleCSVUpload(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const nameIdx = header.indexOf('name');
+      const skuIdx = header.indexOf('sku');
+      const qtyIdx = header.indexOf('quantity');
+      const priceIdx = header.indexOf('unit_price');
+      const catIdx = header.indexOf('category');
+
+      if(nameIdx < 0 || qtyIdx < 0 || priceIdx < 0) { 
+        toast('CSV must include: name, quantity, unit_price','error'); 
+        e.target.value = '';
+        return; 
+      }
+
+      let added = 0, skipped = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx] || cols[nameIdx].trim().length === 0) { skipped++; continue; }
+
+        const qty = parseFloat(cols[qtyIdx]);
+        const price = parseFloat(cols[priceIdx]);
+        
+        if(isNaN(qty) || isNaN(price) || qty < 0 || price < 0) {
+          skipped++;
+          continue;
+        }
+
+        const data = {
+          type: 'product',
+          name: cols[nameIdx].trim(),
+          sku: skuIdx >= 0 ? (cols[skuIdx]||'').trim() : '',
+          category: catIdx >= 0 ? (cols[catIdx]||'').trim() : '',
+          quantity: qty,
+          unit_price: price,
+          date: new Date().toISOString()
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else skipped++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} product${added!==1?'s':''}`);
+        navigate('inventory');
+      }
+      if(skipped>0) { toast(`⚠️ ${skipped} rows skipped (invalid data)`); }
+    } catch(err) {
+      toast('CSV error: Check format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadPurchase(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const requiredFields = ['name', 'vendor', 'quantity', 'total'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const nameIdx = header.indexOf('name');
+      const vendorIdx = header.indexOf('vendor');
+      const qtyIdx = header.indexOf('quantity');
+      const totalIdx = header.indexOf('total');
+      const dateIdx = header.indexOf('date');
+      const statusIdx = header.indexOf('status');
+
+      let added = 0, skipped = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx] || cols[nameIdx].trim().length === 0) { skipped++; continue; }
+
+        const qty = parseFloat(cols[qtyIdx]);
+        const total = parseFloat(cols[totalIdx]);
+        
+        if(isNaN(qty) || isNaN(total) || qty < 0 || total < 0) {
+          skipped++;
+          continue;
+        }
+
+        const data = {
+          type: 'purchase',
+          name: cols[nameIdx].trim(),
+          vendor: (cols[vendorIdx]||'').trim(),
+          quantity: qty,
+          total: total,
+          date: dateIdx>=0 && cols[dateIdx] ? new Date(cols[dateIdx]).toISOString() : new Date().toISOString(),
+          status: statusIdx>=0 && cols[statusIdx] ? cols[statusIdx].trim() : 'pending'
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else skipped++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} purchase${added!==1?'es':''}`);
+        navigate('purchase');
+      }
+      if(skipped>0) { toast(`⚠️ ${skipped} rows skipped (invalid data)`); }
+    } catch(err) {
+      toast('CSV error: Check format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadSales(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const requiredFields = ['name', 'quantity', 'total'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const nameIdx = header.indexOf('name');
+      const qtyIdx = header.indexOf('quantity');
+      const totalIdx = header.indexOf('total');
+      const dateIdx = header.indexOf('date');
+      const statusIdx = header.indexOf('status');
+
+      let added = 0, skipped = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx] || cols[nameIdx].trim().length === 0) { skipped++; continue; }
+
+        const qty = parseFloat(cols[qtyIdx]);
+        const total = parseFloat(cols[totalIdx]);
+        
+        if(isNaN(qty) || isNaN(total) || qty < 0 || total < 0) {
+          skipped++;
+          continue;
+        }
+
+        const data = {
+          type: 'sale',
+          name: cols[nameIdx].trim(),
+          quantity: qty,
+          total: total,
+          date: dateIdx>=0 && cols[dateIdx] ? new Date(cols[dateIdx]).toISOString() : new Date().toISOString(),
+          status: statusIdx>=0 && cols[statusIdx] ? cols[statusIdx].trim() : 'pending'
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else skipped++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} sale${added!==1?'s':''}`);
+        navigate('sales');
+      }
+      if(skipped>0) { toast(`⚠️ ${skipped} rows skipped (invalid data)`); }
+    } catch(err) {
+      toast('CSV error: Check format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadVendors(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const requiredFields = ['name'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const nameIdx = header.indexOf('name');
+      const catIdx = header.indexOf('category');
+      const statusIdx = header.indexOf('status');
+      const notesIdx = header.indexOf('notes');
+
+      let added = 0, failed = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx]) continue;
+
+        const data = {
+          type: 'vendor',
+          name: cols[nameIdx],
+          category: catIdx>=0 ? cols[catIdx]||'' : '',
+          status: statusIdx>=0 && cols[statusIdx] ? cols[statusIdx] : 'active',
+          notes: notesIdx>=0 ? cols[notesIdx]||'' : '',
+          date: new Date().toISOString()
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else failed++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} vendor${added!==1?'s':''}`);
+        navigate('vendors');
+      }
+      if(failed>0) { toast(`${failed} rows failed to import`,'error'); }
+    } catch(err) {
+      toast('Invalid CSV format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadTransfers(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const requiredFields = ['name', 'from_location', 'to_location', 'quantity'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const nameIdx = header.indexOf('name');
+      const fromIdx = header.indexOf('from_location');
+      const toIdx = header.indexOf('to_location');
+      const qtyIdx = header.indexOf('quantity');
+      const dateIdx = header.indexOf('date');
+      const statusIdx = header.indexOf('status');
+      const notesIdx = header.indexOf('notes');
+
+      let added = 0, skipped = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx] || cols[nameIdx].trim().length === 0) { skipped++; continue; }
+
+        const qty = parseFloat(cols[qtyIdx]);
+        
+        if(isNaN(qty) || qty < 0) {
+          skipped++;
+          continue;
+        }
+
+        const data = {
+          type: 'transfer',
+          name: cols[nameIdx].trim(),
+          from_location: (cols[fromIdx]||'').trim(),
+          to_location: (cols[toIdx]||'').trim(),
+          quantity: qty,
+          date: dateIdx>=0 && cols[dateIdx] ? new Date(cols[dateIdx]).toISOString() : new Date().toISOString(),
+          status: statusIdx>=0 && cols[statusIdx] ? cols[statusIdx].trim() : 'pending',
+          notes: notesIdx>=0 ? (cols[notesIdx]||'').trim() : ''
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else skipped++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} transfer${added!==1?'s':''}`);
+        navigate('transfers');
+      }
+      if(skipped>0) { toast(`⚠️ ${skipped} rows skipped (invalid data)`); }
+    } catch(err) {
+      toast('CSV error: Check format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadVendors(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = parseCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+      const requiredFields = ['name'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const nameIdx = header.indexOf('name');
+      const catIdx = header.indexOf('category');
+      const statusIdx = header.indexOf('status');
+      const notesIdx = header.indexOf('notes');
+
+      let added = 0, skipped = 0;
+      for(let i=1; i<lines.length; i++) {
+        if((allData.length + added) >= 999) { toast('Reached 999 record limit','error'); break; }
+        
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[nameIdx] || cols[nameIdx].trim().length === 0) { skipped++; continue; }
+
+        const data = {
+          type: 'vendor',
+          name: cols[nameIdx].trim(),
+          category: catIdx>=0 ? (cols[catIdx]||'').trim() : '',
+          status: statusIdx>=0 && cols[statusIdx] ? cols[statusIdx].trim() : 'active',
+          notes: notesIdx>=0 ? (cols[notesIdx]||'').trim() : '',
+          date: new Date().toISOString()
+        };
+
+        const result = await window.dataSdk.create(data);
+        if(result.isOk) added++;
+        else skipped++;
+      }
+
+      e.target.value = '';
+      if(added>0) { 
+        toast(`Imported ${added} vendor${added!==1?'s':''}`);
+        navigate('vendors');
+      }
+      if(skipped>0) { toast(`⚠️ ${skipped} rows skipped (invalid data)`); }
+    } catch(err) {
+      toast('CSV error: Check format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function handleCSVUploadStock(e) {
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (event) => {
+    try {
+      const csv = event.target.result;
+      const lines = csv.trim().split('\n').filter(line=>line.trim());
+      if(lines.length < 2) { toast('CSV must have header row and data','error'); return; }
+
+      const header = lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const requiredFields = ['sku', 'product_name', 'new_qty'];
+      const hasRequired = requiredFields.every(f=>header.includes(f));
+      if(!hasRequired) { toast(`CSV must include: ${requiredFields.join(', ')}`, 'error'); return; }
+
+      const skuIdx = header.indexOf('sku');
+      const nameIdx = header.indexOf('product_name');
+      const newQtyIdx = header.indexOf('new_qty');
+      const reasonIdx = header.indexOf('reason');
+
+      let updated = 0, notFound = 0;
+      for(let i=1; i<lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if(!cols[skuIdx] && !cols[nameIdx]) continue;
+
+        const searchSku = cols[skuIdx];
+        const searchName = cols[nameIdx];
+        
+        // Find existing product by SKU or name
+        let product = null;
+        if(searchSku) product = byType('product').find(p=>p.sku===searchSku);
+        if(!product && searchName) product = byType('product').find(p=>p.name===searchName);
+        
+        if(!product) {
+          notFound++;
+          continue;
+        }
+
+        const newQty = parseFloat(cols[newQtyIdx]);
+        
+        if(isNaN(newQty) || newQty < 0) {
+          notFound++;
+          continue;
+        }
+        
+        const reason = reasonIdx>=0 ? cols[reasonIdx]||'' : '';
+
+        const result = await window.dataSdk.update({
+          ...product,
+          quantity: newQty,
+          notes: reason ? `Stock update: ${reason}` : product.notes
+        });
+
+        if(result.isOk) updated++;
+      }
+
+      e.target.value = '';
+      if(updated>0) { 
+        toast(`Updated ${updated} product${updated!==1?'s':''} stock`);
+        navigate('inventory');
+      }
+      if(notFound>0) { toast(`${notFound} product${notFound!==1?'s':''} not found in inventory`,'error'); }
+    } catch(err) {
+      toast('Invalid CSV format','error');
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function downloadFullReport() {
+  const products = byType('product'), purchases = byType('purchase'), sales = byType('sale'), vendors = byType('vendor');
+  
+  // Calculate summary data
+  const totalInventoryValue = products.reduce((s,p)=>s+((p.quantity||0)*(p.unit_price||0)),0);
+  const totalPurchases = purchases.reduce((s,p)=>s+(p.total||0),0);
+  const totalSales = sales.reduce((s,p)=>s+(p.total||0),0);
+  const net = totalSales - totalPurchases;
+  const totalStock = products.reduce((s,p)=>s+(p.quantity||0),0);
+  
+  const date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const timestamp = new Date().toLocaleString('en-US',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  
+  // Build CSV
+  let csv = 'BHATTI - Warehouse Management Report\n';
+  csv += `Generated,${timestamp}\n`;
+  csv += `Company,BHATTI\n\n`;
+  
+  // Summary Section
+  csv += '=== WAREHOUSE SUMMARY ===\n';
+  csv += `Total Products,${products.length}\n`;
+  csv += `Total Stock Units,${totalStock}\n`;
+  csv += `Inventory Value,$${totalInventoryValue.toFixed(2)}\n`;
+  csv += `Total Purchases,$${totalPurchases.toFixed(2)}\n`;
+  csv += `Total Sales,$${totalSales.toFixed(2)}\n`;
+  csv += `Net Profit/Loss,$${net.toFixed(2)}\n`;
+  csv += `Active Vendors,${vendors.filter(v=>v.status==='active').length}\n\n`;
+  
+  // Products
+  csv += '=== INVENTORY ===\n';
+  csv += 'Product Name,SKU,Category,Quantity,Unit Price,Total Value,Status\n';
+  products.forEach(p=>{
+    const val = (p.quantity||0)*(p.unit_price||0);
+    const status = (p.quantity||0)<10 ? 'LOW STOCK' : 'OK';
+    csv += `"${p.name}","${p.sku||'-'}","${p.category||'-'}",${p.quantity||0},$${(p.unit_price||0).toFixed(2)},$${val.toFixed(2)},"${status}"\n`;
+  });
+  csv += '\n';
+  
+  // Purchases
+  csv += '=== PURCHASES ===\n';
+  csv += 'Date,Product,Vendor,Quantity,Unit Cost,Total,Status,Notes\n';
+  purchases.forEach(p=>{
+    const unitCost = p.quantity > 0 ? (p.total / p.quantity).toFixed(2) : '0.00';
+    const notes = p.notes ? `"${p.notes.replace(/"/g,'""')}"` : '""';
+    csv += `${fmtDate(p.date)},"${p.name}","${p.vendor||'-'}",${p.quantity||0},$${unitCost},$${(p.total||0).toFixed(2)},"${p.status||'pending'}",${notes}\n`;
+  });
+  csv += `Total Purchases Count,${purchases.length}\n`;
+  csv += `Total Purchase Amount,$${totalPurchases.toFixed(2)}\n\n`;
+  
+  // Sales
+  csv += '=== SALES ===\n';
+  csv += 'Date,Product,Quantity,Unit Price,Total,Status,Notes\n';
+  sales.forEach(s=>{
+    const unitPrice = s.quantity > 0 ? (s.total / s.quantity).toFixed(2) : '0.00';
+    const notes = s.notes ? `"${s.notes.replace(/"/g,'""')}"` : '""';
+    csv += `${fmtDate(s.date)},"${s.name}",${s.quantity||0},$${unitPrice},$${(s.total||0).toFixed(2)},"${s.status||'pending'}",${notes}\n`;
+  });
+  csv += `Total Sales Count,${sales.length}\n`;
+  csv += `Total Sales Amount,$${totalSales.toFixed(2)}\n\n`;
+  
+  // Vendors
+  csv += '=== VENDORS ===\n';
+  csv += 'Name,Category,Status,Total Purchases,Total Spent,Notes\n';
+  vendors.forEach(v=>{
+    const vendorPurchases = purchases.filter(p=>p.vendor===v.name);
+    const vendorTotal = vendorPurchases.reduce((s,p)=>s+(p.total||0),0);
+    const notes = v.notes ? `"${v.notes.replace(/"/g,'""')}"` : '""';
+    csv += `"${v.name}","${v.category||'-'}","${v.status||'active'}",${vendorPurchases.length},$${vendorTotal.toFixed(2)},${notes}\n`;
+  });
+  csv += '\n';
+  
+  // Category Analysis
+  csv += '=== INVENTORY BY CATEGORY ===\n';
+  csv += 'Category,Product Count,Total Units,Total Value,Average Unit Price\n';
+  const catAnalysis = {};
+  products.forEach(p=>{
+    const cat = p.category || 'Uncategorized';
+    if(!catAnalysis[cat]) catAnalysis[cat] = {count:0, units:0, value:0, prices:[]};
+    catAnalysis[cat].count++;
+    catAnalysis[cat].units += p.quantity||0;
+    catAnalysis[cat].value += (p.quantity||0)*(p.unit_price||0);
+    catAnalysis[cat].prices.push(p.unit_price||0);
+  });
+  Object.entries(catAnalysis).forEach(([cat,data])=>{
+    const avgPrice = data.prices.length > 0 ? (data.prices.reduce((a,b)=>a+b,0)/data.prices.length).toFixed(2) : '0.00';
+    csv += `"${cat}",${data.count},${data.units},$${data.value.toFixed(2)},$${avgPrice}\n`;
+  });
+  csv += '\n';
+  
+  // Low Stock Alert
+  const lowStock = products.filter(p=>(p.quantity||0)<10);
+  if(lowStock.length > 0) {
+    csv += '=== LOW STOCK ALERT ===\n';
+    csv += 'Product,SKU,Current Qty,Recommended Action\n';
+    lowStock.forEach(p=>{
+      const action = (p.quantity||0) === 0 ? 'URGENT: Order immediately' : 'Reorder soon';
+      csv += `"${p.name}","${p.sku||'-'}",${p.quantity||0},"${action}"\n`;
+    });
+  }
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  const dateStr = new Date().toISOString().split('T')[0];
+  link.download = `BHATTI-Warehouse-Report-${dateStr}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Complete warehouse report downloaded');
+}
+
+// ===== GITHUB BACKUP =====
+function openGitHubBackupModal() {
+  document.getElementById('github-modal').classList.remove('hidden');
+  document.getElementById('github-modal').classList.add('flex');
+  lucide.createIcons();
+}
+
+function closeGitHubModal() {
+  document.getElementById('github-modal').classList.add('hidden');
+  document.getElementById('github-modal').classList.remove('flex');
+}
+
+// GitHub Auto-Save Storage
+let githubConfig = {
+  token: localStorage.getItem('gh_token') || '',
+  repoName: localStorage.getItem('gh_repo') || 'warehouse-backup',
+  username: localStorage.getItem('gh_username') || '',
+  enabled: localStorage.getItem('gh_autosave_enabled') === 'true'
+};
+
+async function performGitHubAutoSave() {
+  if(!githubConfig.enabled || !githubConfig.token || !githubConfig.username) return;
+  
+  try {
+    const backup = {
+      timestamp: new Date().toISOString(),
+      company: defaultConfig.company_name,
+      records: allData,
+      summary: {
+        totalRecords: allData.length,
+        products: byType('product').length,
+        purchases: byType('purchase').length,
+        sales: byType('sale').length,
+        transfers: byType('transfer').length,
+        vendors: byType('vendor').length
+      }
+    };
+    
+    const backupJson = JSON.stringify(backup, null, 2);
+    
+    // Update backup.json
+    await fetch(`https://api.github.com/repos/${githubConfig.username}/${githubConfig.repoName}/contents/backup.json`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubConfig.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Auto-backup: ${new Date().toLocaleString()}`,
+        content: btoa(backupJson)
+      })
+    });
+  } catch(err) {
+    // Silently fail to not interrupt user
+    console.log('Auto-backup failed:', err.message);
+  }
+}
+
+function encodeToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  const binary = String.fromCharCode.apply(null, bytes);
+  return btoa(binary);
+}
+
+async function handleGitHubBackup(e) {
+  e.preventDefault();
+  
+  const token = document.getElementById('github-token').value.trim();
+  const repoName = document.getElementById('github-repo').value.trim();
+  const btn = document.getElementById('github-submit');
+  
+  if(!token || !repoName) {
+    toast('Please fill in all fields','error');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" class="w-3 h-3 animate-spin"></i> Creating...';
+  
+  try {
+    // Get GitHub username
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: {'Authorization': `token ${token}`}
+    });
+    
+    if(!userRes.ok) {
+      throw new Error('Invalid GitHub token');
+    }
+    
+    const userData = await userRes.json();
+    const username = userData.login;
+    
+    // Save config for auto-save
+    githubConfig.token = token;
+    githubConfig.repoName = repoName;
+    githubConfig.username = username;
+    githubConfig.enabled = true;
+    
+    localStorage.setItem('gh_token', token);
+    localStorage.setItem('gh_repo', repoName);
+    localStorage.setItem('gh_username', username);
+    localStorage.setItem('gh_autosave_enabled', 'true');
+    
+    // Prepare backup
+    const backup = {
+      timestamp: new Date().toISOString(),
+      company: defaultConfig.company_name,
+      records: allData,
+      summary: {
+        totalRecords: allData.length,
+        products: byType('product').length,
+        purchases: byType('purchase').length,
+        sales: byType('sale').length,
+        transfers: byType('transfer').length,
+        vendors: byType('vendor').length
+      }
+    };
+    
+    const readme = `# ${repoName}\n\n## Warehouse Management Backup\nAuto-Save Enabled - Data syncs automatically every time you update records\n\nCreated: ${new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'})}\n\n### Summary\n- Total Records: ${backup.summary.totalRecords}\n- Products: ${backup.summary.products}\n- Purchases: ${backup.summary.purchases}\n- Sales: ${backup.summary.sales}\n- Stock Transfers: ${backup.summary.transfers}\n- Vendors: ${backup.summary.vendors}\n\n### Files\n- backup.json - Complete data export (updated automatically)\n- README.md - Documentation\n\nLast updated: ${backup.timestamp}\n\n### How It Works\nEvery time you add, update, or delete a record, your warehouse data is automatically saved to this GitHub repository.`;
+
+    const backupJson = JSON.stringify(backup, null, 2);
+    
+    // Create repo
+    const createRes = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: repoName,
+        description: 'Warehouse Management System Backup - Auto-syncing',
+        private: false,
+        auto_init: true
+      })
+    });
+
+    if(!createRes.ok) {
+      const errData = await createRes.json();
+      if(errData.message && errData.message.includes('exists')) {
+        throw new Error('Repository already exists');
+      }
+      throw new Error(errData.message || 'Failed to create repository');
+    }
+    
+    // Upload backup.json file
+    await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/backup.json`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Initial warehouse backup - ${new Date().toLocaleDateString()}`,
+        content: btoa(unescape(encodeURIComponent(backupJson)))
+      })
+    });
+    
+    // Upload README.md file
+    await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/README.md`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Setup documentation - ${new Date().toLocaleDateString()}`,
+        content: btoa(unescape(encodeURIComponent(readme)))
+      })
+    });
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="upload" class="w-3 h-3"></i> Backup Now';
+    
+    toast(`✅ Auto-save enabled! Data syncs to: github.com/${username}/${repoName}`);
+    closeGitHubModal();
+    document.getElementById('github-token').value = '';
+    
+  } catch(err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="upload" class="w-3 h-3"></i> Backup Now';
+    toast(`Backup failed: ${err.message}`,'error');
+  }
+}
+
+// ===== INIT =====
+(async function() {
+  // Element SDK
+  if(window.elementSdk) {
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => {
+        const c = config;
+        const font = c.font_family || defaultConfig.font_family;
+        const size = c.font_size || defaultConfig.font_size;
+        document.getElementById('el-company').textContent = c.company_name || defaultConfig.company_name;
+        document.getElementById('el-subtitle').textContent = c.dashboard_subtitle || defaultConfig.dashboard_subtitle;
+        document.body.style.background = c.background_color || defaultConfig.background_color;
+        document.querySelectorAll('.bg-slate-900').forEach(el=>el.style.backgroundColor = c.surface_color || defaultConfig.surface_color);
+        document.body.style.color = c.text_color || defaultConfig.text_color;
+        document.body.style.fontFamily = `${font}, sans-serif`;
+        document.body.style.fontSize = `${size}px`;
+      },
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get:()=>config.background_color||defaultConfig.background_color, set:(v)=>{config.background_color=v;window.elementSdk.setConfig({background_color:v});} },
+          { get:()=>config.surface_color||defaultConfig.surface_color, set:(v)=>{config.surface_color=v;window.elementSdk.setConfig({surface_color:v});} },
+          { get:()=>config.text_color||defaultConfig.text_color, set:(v)=>{config.text_color=v;window.elementSdk.setConfig({text_color:v});} },
+          { get:()=>config.primary_action||defaultConfig.primary_action, set:(v)=>{config.primary_action=v;window.elementSdk.setConfig({primary_action:v});} },
+          { get:()=>config.secondary_action||defaultConfig.secondary_action, set:(v)=>{config.secondary_action=v;window.elementSdk.setConfig({secondary_action:v});} },
+        ],
+        borderables: [],
+        fontEditable: { get:()=>config.font_family||defaultConfig.font_family, set:(v)=>{config.font_family=v;window.elementSdk.setConfig({font_family:v});} },
+        fontSizeable: { get:()=>config.font_size||defaultConfig.font_size, set:(v)=>{config.font_size=v;window.elementSdk.setConfig({font_size:v});} },
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['company_name', config.company_name || defaultConfig.company_name],
+        ['dashboard_subtitle', config.dashboard_subtitle || defaultConfig.dashboard_subtitle],
+      ])
+    });
+  }
+
+  // Data SDK
+  const initResult = await window.dataSdk.init({
+    onDataChanged(data) {
+      allData = data;
+      renderCurrentPage();
+      // Trigger auto-save to GitHub
+      performGitHubAutoSave();
+    }
+  });
+  if(!initResult.isOk) { toast('Failed to connect to data store','error'); }
+
+  lucide.createIcons();
+})();
+</script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f2fe5db0646ffa5',t:'MTc3NzMxNDYyMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
